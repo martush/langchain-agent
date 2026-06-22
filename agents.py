@@ -26,9 +26,13 @@ print(f"DEBUG: Loading .env from: {os.path.abspath(path)}")
 
 # DEV ONLY - ssl verification disabled
 llm = ChatOpenAI(model       = "gpt-5-mini",
-                 http_client = httpx.Client(verify=False))
+                 http_client = httpx.Client(verify=False),
+                 max_retries = 5,
+                 timeout     = 60
+                 )
 #resp = llm.invoke("Reply with exactly: connection works")
 #print(resp.content)
+
 
 
 
@@ -42,7 +46,9 @@ utility_agent = create_agent(
                     system_prompt = (
                                     "You are a transactions and currency specialist. Use the FX-rate tool for "
                                     "currency questions and the transaction-history tool for account activity. "
-                                    "Answer concisely with just the requested information; do not offer follow-ups."
+                                    "When reporting transactions, ALWAYS include the account number and date range "
+                                    "exactly as returned by the tool. Do not omit identifying details. "
+                                    "Answer concisely; do not offer follow-ups."
                                     )
                     )
 
