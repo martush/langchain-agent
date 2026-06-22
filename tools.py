@@ -3,13 +3,21 @@ from langchain_core.tools import tool
  
 from mock_data.transactions import query_transactions
 
-
 ########################################################
 ############### Tool for FX pairs ######################
 ########################################################
 @tool
 def lookup_fx_rate(base: str, quote: str) -> str:
-    """Look up the current FX rate for a currency pair, e.g. base='EUR', quote='USD'."""
+    """Look up the current FX rate for a currency pair, e.g. base='EUR', quote='USD'
+    
+    Args:
+        base  : the base currency code
+        qupte : the currency to be converted to
+
+    Returns:
+        string equation of 1 base currency equal to calculated quote currency (if in dict)
+    
+    """
     mock_rates = {
         ("EUR", "USD"): 1.147,
         ("EUR", "GBP"): 0.866,
@@ -38,13 +46,18 @@ def lookup_fx_rate(base: str, quote: str) -> str:
 ########################################################
 ########### Tool for transaction history ###############
 ########################################################
+
+# fix to add a header with acc number - if missing, supervisor says no info
 @tool
 def get_transaction_history(account: str, start_date: str = "", end_date: str = "") -> str:
     """Retrieve transactions for an account within an optional date range.
  
-    account: account ID, e.g. 'ACC-001'.
-    start_date / end_date: ISO dates 'YYYY-MM-DD'. Leave empty for an open bound.
-    Returns one line per transaction with date, merchant, amount, category, and status.
+    Args:
+        account               : account ID, e.g. 'ACC-001'.
+        start_date / end_date : ISO dates 'YYYY-MM-DD'. Leave empty for an open bound
+    
+    Returns: 
+        one line per transaction with date, merchant, amount, category, and status
     """
     rows = query_transactions(
                         account,
@@ -53,12 +66,16 @@ def get_transaction_history(account: str, start_date: str = "", end_date: str = 
                         )
     if not rows:
         return f"No transactions found for {account} in the given range."
+    header = f"Account {account} — transactions"
+    if start_date or end_date:
+        header += f" ({start_date or 'start'} to {end_date or 'end'})"
     lines = [
         # adding max width and alignment
         f"{r['date']}  {r['merchant']:<16} {r['amount']:>9.2f}  {r['category']:<13} ({r['status']})"
         for r in rows
     ]
-    return f"Transactions for {account}:\n" + "\n".join(lines)
+    return f"{header}:\n" + "\n".join(lines)
+
 
 ########################################################
 ########### Tool for document retrieval ################
@@ -74,6 +91,13 @@ def search_documents(query: str) -> str:
     Scans the docs folder, scores each document by how many query words it contains,
     and returns the text of the best-matching document(s). Use for questions about
     fees, refunds, account types, and policies.
+
+    Args:
+        query : the query which needs relevant docs
+
+    Returns:
+        string with the top 2 matched documents
+
     """
     query_words = {word.lower().strip(".,?!") for word in query.split() if len(word) > 2}
     scored = []
